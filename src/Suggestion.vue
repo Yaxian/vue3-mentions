@@ -1,8 +1,8 @@
 <script>
-  import { defineComponent } from 'vue'
+  import { defineComponent, h } from 'vue'
   import {
     getSubstringIndex,
-  } from './utils'
+  } from './utils/index'
 
   export default defineComponent({
     name: 'Suggestion',
@@ -51,16 +51,14 @@
         const i = getSubstringIndex(display, query, false)
 
         if (i === -1) {
-          return <span >{display}</span>
+          return h('span', display)
         }
 
-        return (
-          <span>
-            {display.substring(0, i)}
-            <b >{display.substring(i, i + query.length)}</b>
-            {display.substring(i + query.length)}
-          </span>
-        )
+        return h('span', [
+          display.substring(0, i),
+          h('b', display.substring(i, i + query.length)),
+          display.substring(i + query.length)
+        ])
       }
 
       function renderContent() {
@@ -85,16 +83,11 @@
 
       return () => {
         const { id } = props
-        return (
-          <li
-            id={id}
-            role="option"
-            aria-selected={props.focused || undefined}
-            {...attrs}
-          >
-            {renderContent()}
-          </li>
-        )
+        return h('li', {
+          id,
+          role: 'option',
+          'aria-selected': props.focused || undefined,
+        }, renderContent())
       }
     },
   })

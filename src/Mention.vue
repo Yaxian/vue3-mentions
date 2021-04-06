@@ -1,12 +1,11 @@
+<template>
+  <span :data-mention="display">{{ display }}</span>
+</template>
+
 <script>
   import {
     defineComponent,
   } from 'vue'
-
-
-  const bs = {
-    color: '#3a64ff', zIndex: 1, textShadow: '1px 1px 1px white, 1px -1px 1px white, -1px 1px 1px white, -1px -1px 1px white', position: 'relative',
-  }
 
   export const MENTION_NAME = 'Mention'
 
@@ -45,14 +44,6 @@
         type: String,
       },
       data: [Array, Function],
-    },
-    setup(props) {
-      return () => {
-        const { display } = props
-        return (
-          <span data-mention={display} bs={bs}>{display}</span>
-        )
-      }
     },
   })
 </script>

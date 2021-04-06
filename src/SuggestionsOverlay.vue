@@ -3,8 +3,9 @@
     defineComponent,
     ref,
     watch,
+    h
   } from 'vue'
-  import { getSuggestionHtmlId } from './utils'
+  import { getSuggestionHtmlId } from './utils/index'
 
   import Suggestion from './Suggestion.vue'
 
@@ -81,19 +82,17 @@
         const { childIndex, query } = queryInfo
         const { renderSuggestion: propPenderSuggestion } = (slots.default?.() || [])[childIndex].props
 
-        return (
-          <Suggestion
-            key={`${childIndex}-${getID(result)}`}
-            id={getSuggestionHtmlId(props.id, index)}
-            query={query}
-            index={index}
-            renderSuggestion={propPenderSuggestion}
-            suggestion={result}
-            focused={isFocused}
-            onClick={() => select(result, queryInfo)}
-            onMouseenter={() => handleMouseEnter(index)}
-          />
-        )
+        return h(Suggestion, {
+          key: `${childIndex}-${getID(result)}`,
+          id: getSuggestionHtmlId(props.id, index),
+          query,
+          index,
+          renderSuggestion: propPenderSuggestion,
+          suggestion: result,
+          focused: isFocused || undefined,
+          onClick: () => select(result, queryInfo),
+          onMouseenter: () => handleMouseEnter(index)
+        })
       }
 
       function renderSuggestions() {
@@ -111,7 +110,7 @@
           return null
         }
 
-        return <span>loading...</span>
+        return h('span', 'loading...')
       }
 
       return () => {
@@ -122,28 +121,18 @@
           containerRef,
         } = props
 
-        return (
-          <div
-            onMousedown={onMouseDown}
-            ref={containerRef}
-          >
-            <div
-              bs={{
-                overflow: 'auto',
-                whiteSpace: 'pre',
-                maxHeight: 280,
-              }}
-              ref={setUlElement}
-              id={id}
-              role="listbox"
-              aria-label={a11ySuggestionsListLabel}
-            >
-              {renderSuggestions()}
-            </div>
-
-            {renderLoadingIndicator()}
-          </div>
-        )
+        return h('div', {
+          onMousedown: onMouseDown,
+          ref: containerRef
+        }, [
+          h('div', {
+            ref: setUlElement,
+            id,
+            role: 'listbox',
+            'aria-label': a11ySuggestionsListLabel
+          }, renderSuggestions()),
+          renderLoadingIndicator(),
+        ])
       }
     },
   })

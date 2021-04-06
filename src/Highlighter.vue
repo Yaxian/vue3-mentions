@@ -5,14 +5,15 @@
     reactive,
     onMounted,
     onUpdated,
+    h,
   } from 'vue'
-  import isNumber from 'lodash/isNumber'
 
   import {
     iterateMentionsMarkup,
     mapPlainTextIndex,
     readConfigFromChildren,
-  } from './utils'
+    isNumber,
+  } from './utils/index'
 
   import initStyle from './style'
 
@@ -91,22 +92,19 @@
 
       function renderSubstring(string, key) {
         // set substring span to hidden, so that Emojis are not shown double in Mobile Safari
-        return (
-          <span key={key} style={{ visibility: 'hidden' }}>
-            {string}
-          </span>
-        )
+        return h('span', {
+          key,
+          style: {
+            visibility: 'hidden'
+          }
+        }, string)
       }
 
       function renderHighlighterCaret(children) {
-        return (
-          <span
-            ref={setCaretElement}
-            key="caret"
-          >
-            {children}
-          </span>
-        )
+        return h('span', {
+          ref: setCaretElement,
+          key: 'caret'
+        }, children)
       }
 
       // Returns a clone of the Mention child applicable for the specified type to be rendered inside the highlighter
@@ -219,20 +217,10 @@
           resultComponents.push(renderHighlighterCaret(components))
         }
 
-        return (
-          <div
-            ref={containerRef}
-            role="mentions-highlighter-container"
-            bs={{
-              'cmp.mention.wrapper': true,
-              'cmp.mention.highlighter': true,
-              height: singleLine ? 37 : null,
-              ...props.bs,
-            }}
-          >
-            {resultComponents}
-          </div>
-        )
+        return h('div', {
+          ref: containerRef,
+          role: 'mentions-highlighter',
+        }, resultComponents)
       }
     },
   })

@@ -1,60 +1,44 @@
 <template>
   <div>
-    <div v-bind="getRootProps()">
-      <input v-bind="getInputProps()" >
-      <p v-if="isDragActive">Drop the files here ...</p>
-      <p v-else>Drag 'n' drop some files here, or click to select files</p>
-      <div v-if="isFocused" id="focus">
-        focused
-      </div>
-      <div v-if="isDragReject" id="isDragReject">
-        isDragReject: {{ isDragReject }}
-      </div>
-    </div>
-    <button @click="onClick">open</button>
+    <MentionsInput
+      :value="value"
+      :on-change="handleChange"
+      suggestionsPortalHost="body"
+    >
+      <Mention
+        trigger="@"
+        :data="data"
+      />
+    </MentionsInput>
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent, reactive } from 'vue'
-import { useDropzone } from 'vue3-dropzone/src'
+<script>
+import { defineComponent, ref } from 'vue'
+import { MentionsInput, Mention } from 'vue3-mentions/src'
 export default defineComponent({
   name: 'HelloWorld',
-  props: {
-    msg: String
-  },
-  methods: {
-    onClick() {
-      if (this.open) {
-        this.open()
-      }
-    },
-    toggleMulti() {
-      this.options.multiple = !this.options.multiple
-    }
+  components: {
+    MentionsInput,
+    Mention,
   },
   setup() {
-    function onDrop(acceptedFiles, rejectReasons) {
-      console.log('acceptedFiles', acceptedFiles)
-      console.log('rejectReasons', rejectReasons)
+    const value = ref('')
+    const data = [
+      {
+        id: '1',
+        display: 'Water White'
+      }
+    ]
+
+    function handleChange(ev) {
+      value.value = ev.target.value
     }
 
-    const options = reactive({
-      multiple: false,
-      onDrop,
-      accept: '.jpg',
-    })
-
-    const {
-      getRootProps,
-      getInputProps,
-      ...rest
-    } = useDropzone(options)
     return {
-      options,
-      getRootProps,
-      getInputProps,
-      ...rest
+      value,
+      data,
+      handleChange,
     }
   }
 })

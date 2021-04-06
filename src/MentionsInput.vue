@@ -5,8 +5,8 @@
     ref,
     onMounted,
     computed,
-    onUpdated,
-    Teleport
+    Teleport,
+    h,
   } from 'vue'
 
   import { MENTION_NAME } from './Mention.vue'
@@ -26,7 +26,7 @@
     spliceString,
     getSuggestionHtmlId,
     isNumber,
-  } from './utils'
+  } from './utils/index'
 
   import Highlighter from './Highlighter.vue'
   import SuggestionsOverlay from './SuggestionsOverlay.vue'
@@ -125,9 +125,9 @@
       /**
        * 下拉框挂载到自定义 DOM 上面
        */
-      portal: {
-        type: Boolean,
-        default: true,
+      suggestionsPortalHost: {
+        type: String,
+        default: null,
       },
 
       bs: {
@@ -765,107 +765,124 @@
       })
 
 
+      function renderSuggestionsOverlay() {
+        if (!isNumber(state.selectionStart)) {
+          // do not show suggestions when the input does not have the focus
+          return null
+        }
+
+        const { position, left, top } = state.suggestionsPosition
+
+        const suggestionsNode = h(SuggestionsOverlay, {
+          id: uuidSuggestionsOverlay.value,
+          position,
+          left,
+          top,
+          focusIndex: state.focusIndex,
+          scrollFocusedIntoView: state.scrollFocusedIntoView,
+          containerRef: setSuggestionsElement,
+          suggestions: state.suggestions,
+          isLoading: isLoading.value,
+          isOpened: isOpened.value,
+          ignoreAccents: props.ignoreAccents,
+          a11ySuggestionsListLabel: props.a11ySuggestionsListLabel,
+
+          onMouseDown: handleSuggestionsMouseDown,
+          onMouseEnter: handleSuggestionsMouseEnter,
+          onSelect: addMention,
+        }, slots.default)
+
+
+        if (props.suggestionsPortalHost) {
+          return h(Teleport, {
+            to: props.suggestionsPortalHost
+          }, suggestionsNode)
+        } else {
+          return suggestionsNode
+        }
+      }
 
       onMounted(() => {
         updateSuggestionsPosition()
-        emit('changePlainText', getPlainText())
       })
 
-      onUpdated(() => {
-        updateSuggestionsPosition()
-        if (state.setSelectionAfterMentionChange) {
-          setState({ setSelectionAfterMentionChange: false })
-          setSelection(state.selectionStart, state.selectionEnd)
-        }
-      })
+      return () => {
+        const textProps = inputProps.value
 
-      return {
-        state,
-        setContainerElement,
-        setHighlighterElement,
-        setInputElement,
-        handleCaretPositionChange,
-        slots,
-        textProps,
-        renderSuggestionsOverlay,
-        inputProps,
+        return h('div', {
+          ref: setContainerElement,
+          role: 'mentions-container',
+          class: 'mentions-container',
+        },
+          h('div', {
+            role: 'mentions-control',
+            class: 'mentions-control'
+          }, [
+            h(Highlighter, {
+              containerRef: setHighlighterElement,
+              value: props.value,
+              singleLine: false,
+              selectionStart: state.selectionStart,
+              selectionEnd: state.selectionEnd,
+              onCaretPositionChange: handleCaretPositionChange,
+              class: 'mentions-highlighter',
+            }, slots.default),
+            h('textarea', {
+              ...textProps,
+              ref: setInputElement,
+              class: 'mentions-input'
+            }),
+            renderSuggestionsOverlay(),
+          ])
+        )
       }
     },
   })
 </script>
 
-<template>
-  <div
-    :ref="setContainerElement"
-    role="mentions-container"
-    style="position: relative;overflowY: visible"
-  >
-    <div
-      role="mentions-control"
-      style="position: relative"
-    >
-      <Highlighter
-        :containerRef="setHighlighterElement"
-        :value="value"
-        :singleLine="false"
-        :selectionStart="state.selectionStart"
-        :selectionEnd="state.selectionEnd"
-        :onCaretPositionChange="handleCaretPositionChange"
-        v-slots="slots"
-      />
+<style scoped>
+.mentions-container {
+  position: relative;
+  overflow-y: visible;
+}
 
-      <textarea
-        :ref="setInputElement"
-        spellcheck="false"
-        v-bind="textProps"
-      />
+.mentions-control {
+  background-color: #fff;
+  position: relative;
+}
 
+.mentions-highlighter {
+  color: transparent;
+  width: 100%;;
+  overflow: hidden;
+  position: relative;
+  overflow-wrap: break-word;
+  box-sizing: border-box;
+  text-align: start;
+  white-space: pre-wrap;
+  border: 1px solid transparent;
+}
 
+.mentions-input {
+  font-family: inherit;
+  letter-spacing: inherit;
+  font-size: inherit;
 
-      <template v-if="isNumber(state.selectionStart) && suggestionsPortalHost">
-        <Teleport :to="suggestionsPortalHost">
-          <SuggestionsOverlay
-            :id="uuidSuggestionsOverlay"
-            :position="state.suggestionsPosition.position"
-            :left="state.suggestionsPosition.left"
-            :top="state.suggestionsPosition.top"
-            :focusIndex="state.focusIndex"
-            :scrollFocusedIntoView="state.scrollFocusedIntoView"
-            :containerRef="setSuggestionsElement"
-            :suggestions="state.suggestions"
-            :onSelect="addMention"
-            :onMousedown="handleSuggestionsMouseDown"
-            :onMouseenter="handleSuggestionsMouseEnter"
-            :isLoading="isLoading()"
-            :isOpened="isOpened()"
-            :ignoreAccents="ignoreAccents"
-            :a11ySuggestionsListLabel="a11ySuggestionsListLabel"
-            v-slots="slots"
-          />
-        </Teleport>
-      </template>
+  text-rendering: unset;
+  appearance: none;
+  outline: none;
 
-      <template v-else-if="isNumber(state.selectionStart)">
-        <SuggestionsOverlay
-          :id="uuidSuggestionsOverlay"
-          :position="position"
-          :left="left"
-          :top="top"
-          :focusIndex="state.focusIndex"
-          :scrollFocusedIntoView="state.scrollFocusedIntoView"
-          :containerRef="setSuggestionsElement"
-          :suggestions="state.suggestions"
-          :onSelect="addMention"
-          :onMousedown="handleSuggestionsMouseDown"
-          :onMouseenter="handleSuggestionsMouseEnter"
-          :isLoading="isLoading()"
-          :isOpened="isOpened()"
-          :ignoreAccents="ignoreAccents"
-          :a11ySuggestionsListLabel="a11ySuggestionsListLabel"
-          v-slots="slots"
-        />
-      </template>
-    </div>
+  box-sizing: border-box;
+  resize: none;
 
-  </div>
-</template>
+  display: block;
+  width: 100%;
+  height: 100%;
+  bottom: 0;
+  position: absolute;
+  margin: 0;
+  top: 0;
+  left: 0;
+  background-color: transparent;
+}
+</style>
